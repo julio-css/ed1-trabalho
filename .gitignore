@@ -1,0 +1,7 @@
+.vscode/
+*.o
+src/ted
+tst/t_fila
+tst/t_lista
+tst/t_forma
+tst/t_poligono
