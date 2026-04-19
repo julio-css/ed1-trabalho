@@ -1,6 +1,8 @@
 #include "unity.h"
 #include "forma.h"
 
+#include "stdio.h"
+
 void setUp() {}
 void tearDown() {}
 

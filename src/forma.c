@@ -1,113 +1,122 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "forma.h"
 
-/* ========== Círculo ========== */
-struct Circulo {
-    int id;
-    double x, y, r;
-    char cor_borda[20];
-    char cor_preench[20];
-};
+/* dados especificos do circulo */
+typedef struct {
+    double raio;
+} DadosCirculo;
 
-Circulo* circulo_criar(int id, double x, double y, double r, const char* cor_borda, const char* cor_preench) {
-    Circulo* c = (Circulo*)malloc(sizeof(Circulo));
-    if (!c) return NULL;
-    c->id = id;
-    c->x = x; c->y = y; c->r = r;
-    strncpy(c->cor_borda, cor_borda, 19);
-    c->cor_borda[19] = '\0';
-    strncpy(c->cor_preench, cor_preench, 19);
-    c->cor_preench[19] = '\0';
-    return c;
-}
+/* dados especificos do retangulo */
+typedef struct {
+    double w, h;
+} DadosRetangulo;
 
-void circulo_destruir(Circulo* c) { free(c); }
+/* dados especificos da linha */
+typedef struct {
+    double x2, y2;
+} DadosLinha;
 
-void circulo_desenhar_svg(Circulo* c, FILE* svg) {
-    fprintf(svg, "<circle cx=\"%lf\" cy=\"%lf\" r=\"%lf\" stroke=\"%s\" fill=\"%s\" />\n",
-            c->x, c->y, c->r, c->cor_borda, c->cor_preench);
-}
+/* dados especificos do texto */
+typedef struct {
+    char ancora_tipo;
+    char texto[MAX_TEXTO];
+} DadosTexto;
 
-int circulo_dentro_retangulo(Circulo* c, double rx, double ry, double rw, double rh) {
-    return (c->x - c->r >= rx && c->x + c->r <= rx+rw &&
-            c->y - c->r >= ry && c->y + c->r <= ry+rh);
-}
-
-void circulo_transladar(Circulo* c, double dx, double dy) {
-    c->x += dx; c->y += dy;
-}
-
-void circulo_alterar_cores(Circulo* c, const char* cor_borda, const char* cor_preench) {
-    if (cor_borda) strncpy(c->cor_borda, cor_borda, 19);
-    if (cor_preench) strncpy(c->cor_preench, cor_preench, 19);
-}
-
-double circulo_get_x(Circulo* c) { return c->x; }
-double circulo_get_y(Circulo* c) { return c->y; }
-
-/* ========== Retângulo ========== */
-struct Retangulo {
-    int id;
-    double x, y, w, h;
-    char cor_borda[20];
-    char cor_preench[20];
-};
-
-Retangulo* retangulo_criar(int id, double x, double y, double w, double h, const char* cor_borda, const char* cor_preench) {
-    Retangulo* r = (Retangulo*)malloc(sizeof(Retangulo));
-    if (!r) return NULL;
-    r->id = id;
-    r->x = x; r->y = y; r->w = w; r->h = h;
-    strncpy(r->cor_borda, cor_borda, 19);
-    r->cor_borda[19] = '\0';
-    strncpy(r->cor_preench, cor_preench, 19);
-    r->cor_preench[19] = '\0';
-    return r;
-}
-
-void retangulo_destruir(Retangulo* r) { free(r); }
-
-void retangulo_desenhar_svg(Retangulo* r, FILE* svg) {
-    fprintf(svg, "<rect x=\"%lf\" y=\"%lf\" width=\"%lf\" height=\"%lf\" stroke=\"%s\" fill=\"%s\" />\n",
-            r->x, r->y, r->w, r->h, r->cor_borda, r->cor_preench);
-}
-
-int retangulo_dentro_retangulo(Retangulo* r, double rx, double ry, double rw, double rh) {
-    return (r->x >= rx && r->y >= ry && r->x+r->w <= rx+rw && r->y+r->h <= ry+rh);
-}
-
-void retangulo_transladar(Retangulo* r, double dx, double dy) {
-    r->x += dx; r->y += dy;
-}
-
-void retangulo_alterar_cores(Retangulo* r, const char* cor_borda, const char* cor_preench) {
-    if (cor_borda) strncpy(r->cor_borda, cor_borda, 19);
-    if (cor_preench) strncpy(r->cor_preench, cor_preench, 19);
-}
-
-double retangulo_get_x(Retangulo* r) { return r->x; }
-double retangulo_get_y(Retangulo* r) { return r->y; }
-
-/* ========== Linha (esqueleto) ========== */
-struct Linha {
-    int id;
-    double x1, y1, x2, y2;
-    char cor[20];
-};
-// Implementar depois...
-
-/* ========== Texto (esqueleto) ========== */
-struct Texto {
+/* struct principal — definida so aqui, nunca no .h */
+struct Forma {
     int id;
     double x, y;
-    char* texto;
-    char ancora; // 'i','m','f'
-    char cor_borda[20];
-    char cor_preench[20];
-    char font_family[20];
-    char font_weight[10];
-    int font_size;
+    char cor_borda[MAX_COR];
+    char cor_preench[MAX_COR];
+    TipoForma tipo;
+    union {
+        DadosCirculo   circ;
+        DadosRetangulo ret;
+        DadosLinha     lin;
+        DadosTexto     txt;
+    } dados;
 };
-// Implementar depois...
+
+/* funcao interna: aloca e preenche os campos comuns */
+static Forma* aloca_forma(int id, double x, double y,
+                           char* cor_borda, char* cor_preench,
+                           TipoForma tipo) {
+    Forma* f = (Forma*) malloc(sizeof(Forma));
+    if (f == NULL) return NULL;
+    f->id   = id;
+    f->x    = x;
+    f->y    = y;
+    f->tipo = tipo;
+    strncpy(f->cor_borda,   cor_borda,   MAX_COR - 1);
+    strncpy(f->cor_preench, cor_preench, MAX_COR - 1);
+    f->cor_borda[MAX_COR - 1]   = '\0';
+    f->cor_preench[MAX_COR - 1] = '\0';
+    return f;
+}
+
+Forma* forma_cria_circulo(int id, double x, double y, double r,
+                           char* cor_borda, char* cor_preench) {
+    Forma* f = aloca_forma(id, x, y, cor_borda, cor_preench, FORMA_CIRCULO);
+    if (f == NULL) return NULL;
+    f->dados.circ.raio = r;
+    return f;
+}
+
+Forma* forma_cria_retangulo(int id, double x, double y, double w, double h,
+                             char* cor_borda, char* cor_preench) {
+    Forma* f = aloca_forma(id, x, y, cor_borda, cor_preench, FORMA_RETANGULO);
+    if (f == NULL) return NULL;
+    f->dados.ret.w = w;
+    f->dados.ret.h = h;
+    return f;
+}
+
+Forma* forma_cria_linha(int id, double x1, double y1, double x2, double y2,
+                         char* cor) {
+    Forma* f = aloca_forma(id, x1, y1, cor, cor, FORMA_LINHA);
+    if (f == NULL) return NULL;
+    f->dados.lin.x2 = x2;
+    f->dados.lin.y2 = y2;
+    return f;
+}
+
+Forma* forma_cria_texto(int id, double x, double y,
+                         char* cor_borda, char* cor_preench,
+                         char ancora_tipo, char* texto) {
+    Forma* f = aloca_forma(id, x, y, cor_borda, cor_preench, FORMA_TEXTO);
+    if (f == NULL) return NULL;
+    f->dados.txt.ancora_tipo = ancora_tipo;
+    strncpy(f->dados.txt.texto, texto, MAX_TEXTO - 1);
+    f->dados.txt.texto[MAX_TEXTO - 1] = '\0';
+    return f;
+}
+
+void forma_destroi(Forma* f) {
+    if (f == NULL) return;
+    free(f);
+}
+
+int       forma_get_id(Forma* f)          { return f->id; }
+TipoForma forma_get_tipo(Forma* f)        { return f->tipo; }
+double    forma_get_x(Forma* f)           { return f->x; }
+double    forma_get_y(Forma* f)           { return f->y; }
+double    forma_get_x2(Forma* f)          { return f->dados.lin.x2; }
+double    forma_get_y2(Forma* f)          { return f->dados.lin.y2; }
+double    forma_get_raio(Forma* f)        { return f->dados.circ.raio; }
+double    forma_get_largura(Forma* f)     { return f->dados.ret.w; }
+double    forma_get_altura(Forma* f)      { return f->dados.ret.h; }
+char*     forma_get_cor_borda(Forma* f)   { return f->cor_borda; }
+char*     forma_get_cor_preench(Forma* f) { return f->cor_preench; }
+void      forma_set_x(Forma* f, double x) { f->x = x; }
+void      forma_set_y(Forma* f, double y) { f->y = y; }
+
+void forma_set_cor_borda(Forma* f, char* cor) {
+    strncpy(f->cor_borda, cor, MAX_COR - 1);
+    f->cor_borda[MAX_COR - 1] = '\0';
+}
+
+void forma_set_cor_preench(Forma* f, char* cor) {
+    strncpy(f->cor_preench, cor, MAX_COR - 1);
+    f->cor_preench[MAX_COR - 1] = '\0';
+}
