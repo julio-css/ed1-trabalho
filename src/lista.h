@@ -3,12 +3,28 @@
 
 typedef struct Lista Lista;
 
-Lista* lista_criar(void);
-void lista_destruir(Lista* l);
-int lista_inserir_fim(Lista* l, void* dado, int id, int tipo);
-int lista_remover_por_id(Lista* l, int id);
-void* lista_buscar_por_id(Lista* l, int id, int* tipo);
+/* cria lista vazia. retorna NULL se falhar */
+Lista* lista_cria();
+
+/* libera todos os nos e a estrutura */
+void lista_destroi(Lista* l);
+
+/* insere dado no fim. retorna 1 se ok, 0 se falhar */
+int lista_insere_fim(Lista* l, void* dado);
+
+/* insere dado no inicio. retorna 1 se ok, 0 se falhar */
+int lista_insere_inicio(Lista* l, void* dado);
+
+/* remove o no com exatamente esse ponteiro. retorna o dado ou NULL */
+void* lista_remove(Lista* l, void* dado);
+
+/* acessa dado pelo indice (0 = primeiro). retorna NULL se invalido */
+void* lista_get(Lista* l, int idx);
+
+/* retorna quantos elementos tem */
 int lista_tamanho(Lista* l);
-void lista_percorrer(Lista* l, void (*callback)(int id, int tipo, void* dado));
+
+/* retorna 1 se vazia, 0 caso contrario */
+int lista_vazia(Lista* l);
 
 #endif

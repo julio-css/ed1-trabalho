@@ -1,9 +1,17 @@
 #ifndef FILA_H
 #define FILA_H
 
+/* capacidade maxima da fila circular estatica */
 #define FILA_MAX 100
 
+/*
+ * Fila e uma fila circular estatica de ponteiros void*.
+ * FIFO: o primeiro elemento inserido e o primeiro a sair.
+ * Usa um array fixo de tamanho FILA_MAX — sem malloc por elemento.
+ * A struct interna e definida somente em fila.c (tipo opaco).
+ */
 typedef struct Fila Fila;
+
 
 /* cria fila vazia. retorna NULL se falhar */
 Fila* fila_cria();
