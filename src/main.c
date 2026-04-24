@@ -42,7 +42,7 @@ void processa_geo(FILE* arq_geo, Lista* formas) {
             fscanf(arq_geo, "%d %lf %lf %lf %31s %31s", &id, &x, &y, &r, corb, corp);
             /* cria o circulo e adicona na lista de formas */
             Forma* f = circulo_cria(id, x, y, r, corb, corp);
-            if (f != NULL) lista_insere_fim(formas, f);
+            if (f != NULL) lista_inserir_fim(formas, f);
 
         } else if (strcmp(cmd, "r") == 0) {
             /* formato: r id x y w h cor_borda cor_preench */
@@ -50,14 +50,14 @@ void processa_geo(FILE* arq_geo, Lista* formas) {
             fscanf(arq_geo, "%d %lf %lf %lf %lf %31s %31s", &id, &x, &y, &w, &h, corb, corp);
             /* cria o retangulo — ancora e o canto inferiro esquerdo */
             Forma* f = retangulo_cria(id, x, y, w, h, corb, corp);
-            if (f != NULL) lista_insere_fim(formas, f);
+            if (f != NULL) lista_inserir_fim(formas, f);
 
         } else if (strcmp(cmd, "l") == 0) {
             /* formato: l id x1 y1 x2 y2 cor */
             int id; double x1, y1, x2, y2; char cor[32];
             fscanf(arq_geo, "%d %lf %lf %lf %lf %31s", &id, &x1, &y1, &x2, &y2, cor);
             Forma* f = linha_cria(id, x1, y1, x2, y2, cor);
-            if (f != NULL) lista_insere_fim(formas, f);
+            if (f != NULL) lista_inserir_fim(formas, f);
 
         } else if (strcmp(cmd, "t") == 0) {
             /* formato: t id x y cor_borda cor_preench ancora texto_ate_fim_da_linha */
@@ -69,7 +69,7 @@ void processa_geo(FILE* arq_geo, Lista* formas) {
             /* remove o \n do final se existir */
             if (len > 0 && conteudo[len-1] == '\n') conteudo[len-1] = '\0';
             Forma* f = forma_cria_texto(id, x, y, corb, corp, ancora, conteudo);
-            if (f != NULL) lista_insere_fim(formas, f);
+            if (f != NULL) lista_inserir_fim(formas, f);
 
         } else if (strcmp(cmd, "ts") == 0) {
             /* ts muda fonte — lemos os parametros mas nao usamos ainda */
@@ -108,7 +108,7 @@ void processa_qry(FILE* arq_qry, Lista* formas,
     char cmd[8];
 
     /* lista temporaria das figuras selecionadas pelo comando sel */
-    Lista* selecionadas = lista_cria();
+    Lista* selecionadas = lista_criar();
 
     while (fscanf(arq_qry, "%7s", cmd) == 1) {
 
@@ -148,8 +148,8 @@ void processa_qry(FILE* arq_qry, Lista* formas,
             double x, y, w, h;
             fscanf(arq_qry, "%lf %lf %lf %lf", &x, &y, &w, &h);
             /* descarta selecao anterior */
-            lista_destroi(selecionadas);
-            selecionadas = lista_cria();
+            lista_destruir(selecionadas);
+            selecionadas = lista_criar();
             int n = lista_tamanho(formas);
             if (arq_txt) fprintf(arq_txt, "[*] sel %.1f %.1f %.1f %.1f\n", x, y, w, h);
             for (int i = 0; i < n; i++) {
@@ -157,7 +157,7 @@ void processa_qry(FILE* arq_qry, Lista* formas,
                 double fx = forma_get_x(f), fy = forma_get_y(f);
                 /* verifica se a ancora esta dentro da regiao */
                 if (fx >= x && fx <= x+w && fy >= y && fy <= y+h) {
-                    lista_insere_fim(selecionadas, f);
+                    lista_inserir_fim(selecionadas, f);
                     if (arq_txt) fprintf(arq_txt, "%d: tipo %d\n", forma_get_id(f), forma_get_tipo(f));
                 }
             }
@@ -172,8 +172,8 @@ void processa_qry(FILE* arq_qry, Lista* formas,
                 lista_remove(formas, f);
                 forma_destroi(f);
             }
-            lista_destroi(selecionadas);
-            selecionadas = lista_cria();
+            lista_destruir(selecionadas);
+            selecionadas = lista_criar();
 
         } else if (strcmp(cmd, "mcs") == 0) {
             /* mcs dx dy corb corp — translada e recolore as selecionadas */
@@ -190,7 +190,7 @@ void processa_qry(FILE* arq_qry, Lista* formas,
             }
         }
     }
-    lista_destroi(selecionadas);
+    lista_destruir(selecionadas);
 }
 
 /*
@@ -223,13 +223,13 @@ int main(int argc, char* argv[]) {
     }
 
     /* monta caminho completo do .geo */
-    char caminho_geo[MAX_PATH];
-    snprintf(caminho_geo, MAX_PATH-1, "%s/%s", dir_entrada, nome_geo);
+    char caminho_geo[MAX_PATH * 2]; /* Dobro do tamanho */
+    snprintf(caminho_geo, sizeof(caminho_geo), "%s/%s", dir_entrada, nome_geo);
     FILE* arq_geo = fopen(caminho_geo, "r");
     if (arq_geo == NULL) { fprintf(stderr, "erro: nao abriu %s\n", caminho_geo); return 1; }
 
     /* cria lista de formas e os 10 poligonos */
-    Lista* formas = lista_cria();
+    Lista* formas = lista_criar();
     Poligono* poligonos[MAX_POLIGONOS];
     for (int i = 0; i < MAX_POLIGONOS; i++) poligonos[i] = pol_cria();
 
@@ -239,8 +239,8 @@ int main(int argc, char* argv[]) {
 
     /* processa o .qry se foi informado */
     if (strlen(nome_qry) > 0) {
-        char caminho_qry[MAX_PATH];
-        snprintf(caminho_qry, MAX_PATH-1, "%s/%s", dir_entrada, nome_qry);
+        char caminho_qry[MAX_PATH * 2]; /* Dobro do tamanho */
+        snprintf(caminho_qry, sizeof(caminho_qry), "%s/%s", dir_entrada, nome_qry);
         FILE* arq_qry = fopen(caminho_qry, "r");
         if (arq_qry != NULL) {
             /* monta nome do .txt de saida: base_geo-base_qry.txt */
@@ -249,8 +249,8 @@ int main(int argc, char* argv[]) {
             char* pt = strrchr(base_geo, '.'); if (pt) *pt = '\0';
             strncpy(base_qry, nome_qry, MAX_PATH-1);
             pt = strrchr(base_qry, '.'); if (pt) *pt = '\0';
-            char caminho_txt[MAX_PATH];
-            snprintf(caminho_txt, MAX_PATH-1, "%s/%s-%s.txt", dir_saida, base_geo, base_qry);
+            char caminho_txt[MAX_PATH * 4]; /* quadruplo do tamanho para caber tudo */
+            snprintf(caminho_txt, sizeof(caminho_txt), "%s/%s-%s.txt", dir_saida, base_geo, base_qry);
             FILE* arq_txt = fopen(caminho_txt, "w");
             processa_qry(arq_qry, formas, poligonos, arq_txt);
             if (arq_txt) fclose(arq_txt);
@@ -264,7 +264,7 @@ int main(int argc, char* argv[]) {
     /* libera memoria de todas as formas e da lista */
     int n = lista_tamanho(formas);
     for (int i = 0; i < n; i++) forma_destroi((Forma*) lista_get(formas, i));
-    lista_destroi(formas);
+    lista_destruir(formas);
 
     return 0;
 }

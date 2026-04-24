@@ -4,13 +4,13 @@
 typedef struct Lista Lista;
 
 /* cria lista vazia. retorna NULL se falhar */
-Lista* lista_cria();
+Lista* lista_criar();
 
 /* libera todos os nos e a estrutura */
-void lista_destroi(Lista* l);
+void lista_destruir(Lista* l);
 
 /* insere dado no fim. retorna 1 se ok, 0 se falhar */
-int lista_insere_fim(Lista* l, void* dado);
+int lista_inserir_fim(Lista* l, void* dado);
 
 /* insere dado no inicio. retorna 1 se ok, 0 se falhar */
 int lista_insere_inicio(Lista* l, void* dado);

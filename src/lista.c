@@ -1,9 +1,8 @@
 #include <stdlib.h>
 #include "lista.h"
 
+/* O Nó só precisa guardar o ponteiro genérico e os links */
 typedef struct No {
-    int id;
-    int tipo;
     void* dado;
     struct No* ant;
     struct No* prox;
@@ -34,62 +33,72 @@ void lista_destruir(Lista* l) {
     free(l);
 }
 
-int lista_inserir_fim(Lista* l, void* dado, int id, int tipo) {
+int lista_inserir_fim(Lista* l, void* dado) {
     if (!l) return 0;
     No* novo = (No*)malloc(sizeof(No));
     if (!novo) return 0;
-    novo->id = id;
-    novo->tipo = tipo;
     novo->dado = dado;
     novo->prox = NULL;
     novo->ant = l->fim;
+    
     if (l->fim) l->fim->prox = novo;
     else l->inicio = novo;
+    
     l->fim = novo;
     l->tamanho++;
     return 1;
 }
 
-int lista_remover_por_id(Lista* l, int id) {
+int lista_insere_inicio(Lista* l, void* dado) {
     if (!l) return 0;
-    No* atual = l->inicio;
-    while (atual) {
-        if (atual->id == id) {
-            if (atual->ant) atual->ant->prox = atual->prox;
-            else l->inicio = atual->prox;
-            if (atual->prox) atual->prox->ant = atual->ant;
-            else l->fim = atual->ant;
-            free(atual);
-            l->tamanho--;
-            return 1;
-        }
-        atual = atual->prox;
-    }
-    return 0;
+    No* novo = (No*)malloc(sizeof(No));
+    if (!novo) return 0;
+    novo->dado = dado;
+    novo->ant = NULL;
+    novo->prox = l->inicio;
+    
+    if (l->inicio) l->inicio->ant = novo;
+    else l->fim = novo;
+    
+    l->inicio = novo;
+    l->tamanho++;
+    return 1;
 }
 
-void* lista_buscar_por_id(Lista* l, int id, int* tipo) {
+void* lista_remove(Lista* l, void* dado) {
     if (!l) return NULL;
     No* atual = l->inicio;
     while (atual) {
-        if (atual->id == id) {
-            if (tipo) *tipo = atual->tipo;
-            return atual->dado;
+        if (atual->dado == dado) {
+            if (atual->ant) atual->ant->prox = atual->prox;
+            else l->inicio = atual->prox;
+            
+            if (atual->prox) atual->prox->ant = atual->ant;
+            else l->fim = atual->ant;
+            
+            void* ret = atual->dado;
+            free(atual);
+            l->tamanho--;
+            return ret;
         }
         atual = atual->prox;
     }
     return NULL;
 }
 
+void* lista_get(Lista* l, int idx) {
+    if (!l || idx < 0 || idx >= l->tamanho) return NULL;
+    No* atual = l->inicio;
+    for (int i = 0; i < idx; i++) {
+        atual = atual->prox;
+    }
+    return atual->dado;
+}
+
 int lista_tamanho(Lista* l) {
     return l ? l->tamanho : 0;
 }
 
-void lista_percorrer(Lista* l, void (*callback)(int id, int tipo, void* dado)) {
-    if (!l || !callback) return;
-    No* atual = l->inicio;
-    while (atual) {
-        callback(atual->id, atual->tipo, atual->dado);
-        atual = atual->prox;
-    }
+int lista_vazia(Lista* l) {
+    return l ? (l->tamanho == 0) : 1;
 }
