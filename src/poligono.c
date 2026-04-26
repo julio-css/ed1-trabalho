@@ -53,7 +53,7 @@ int pol_remove(Poligono* p, double* ox, double* oy, int* oid) {
     *oid = pt->id;
     free(pt);
     return 1;
-}
+} 
 
 void pol_limpa(Poligono* p) {
     while (!fila_vazia(p->fila)) {
@@ -73,4 +73,4 @@ int pol_get(Poligono* p, int idx, double* ox, double* oy, int* oid) {
     *oy  = pt->y;
     *oid = pt->id;
     return 1;
-}
+} 
