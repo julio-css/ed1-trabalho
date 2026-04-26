@@ -81,10 +81,23 @@ void forma_set_x(Forma* f, double x);
 /* atualiza coordenada y da ancora */
 void forma_set_y(Forma* f, double y);
 
+/* atualiza segunda extremidade x - apenas para FORMA_LINHA */
+void forma_set_x2(Forma* f, double x2);
+
+/* atualiza segunda extremidade y - apenas para FORMA_LINHA */
+void forma_set_y2(Forma* f, double y2);
+
 /* atualiza cor da borda */
 void forma_set_cor_borda(Forma* f, char* cor);
 
 /* atualiza cor de preenchimento */
 void forma_set_cor_preench(Forma* f, char* cor);
+
+/* retorna o conteudo do texto — apenas para FORMA_TEXTO */
+char* forma_get_texto(Forma* f);
+
+/* retorna o tipo da ancora — apenas para FORMA_TEXTO: i m f */
+char forma_get_ancora(Forma* f);
+
 
 #endif

@@ -120,3 +120,16 @@ void forma_set_cor_preench(Forma* f, char* cor) {
     strncpy(f->cor_preench, cor, MAX_COR - 1);
     f->cor_preench[MAX_COR - 1] = '\0';
 }
+
+/* retorna o conteudo do texto */
+char* forma_get_texto(Forma* f) {
+    return f->dados.txt.texto;
+}
+
+/* retorna o tipo da ancora do texto */
+char forma_get_ancora(Forma* f) {
+    return f->dados.txt.ancora_tipo;
+}
+
+void forma_set_x2(Forma* f, double x2) { f->dados.lin.x2 = x2; }
+void forma_set_y2(Forma* f, double y2) { f->dados.lin.y2 = y2; }
