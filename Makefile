@@ -15,7 +15,8 @@ OBJS = $(SRC)/forma.o \
        $(SRC)/texto.o \
        $(SRC)/fila.o \
        $(SRC)/lista.o \
-       $(SRC)/poligono.o
+       $(SRC)/poligono.o\
+       $(SRC)/svg.o \
 
 ted: $(OBJS) $(SRC)/main.o
 	$(CC) -O0 -o $(SRC)/$(PROJ_NAME) $(OBJS) $(SRC)/main.o -lm
@@ -59,6 +60,9 @@ $(TST)/t_forma: $(TST)/t_forma.c $(SRC)/forma.c $(UNITY)/unity.c
 $(TST)/t_poligono: $(TST)/t_poligono.c $(SRC)/poligono.c $(SRC)/fila.c $(UNITY)/unity.c
 	$(CC) $(CFLAGS) $(INC) -DUNITY_INCLUDE_DOUBLE $(UNITY)/unity.c $(SRC)/fila.c $(SRC)/poligono.c $(TST)/t_poligono.c -o $(TST)/t_poligono
 
+$(SRC)/svg.o: $(SRC)/svg.c $(SRC)/svg.h
+	 $(CC) -c $(CFLAGS) $(INC) $< -o $@
+
 tst_fila: $(TST)/t_fila
 	./$(TST)/t_fila
 
@@ -92,4 +96,4 @@ vtest: tstall
 
 # Roda o valgrind no programa principal (ajuste os arquivos .geo/.qry conforme precisar testar)
 vted: ted
-	$(VG) ./src/ted -f seu_arquivo.geo -o .
+	$(VG) ./src/ted -e testes -f t1.geo -o saida
