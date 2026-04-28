@@ -13,14 +13,19 @@
 #include "poligono.h"
 #include "svg.h"
 
-/* tamanho maximo de um caminho de arquivo */
+/* Tamanho maximo seguro para a construcao de caminhos de ficheiros */
 #define MAX_PATH      512
 
-/* numero maximo de poligonos — o trabalho permite de 1 a 10 */
+/* Numero maximo de poligonos estipulado pelas regras do trabalho (1 a 10) */
 #define MAX_POLIGONOS 10
 
 /*
- * processa_geo — le o arquivo .geo linha por linha
+ * modulo parser: processa_geo
+ * ---------------------------
+ * Funciona como um padrao "Factory". Lê o ficheiro de entrada linha por linha 
+   e, dependendo da assinatura do comando (c, r, l, t),
+   invoca o construtor apropriado do modulo 'forma'. O ponteiro generico resultante
+   eh entao armazenado de forma agnostica na Lista Principal.
  */
 void processa_geo(FILE* arq_geo, Lista* formas) {
     char cmd[4]; 
@@ -47,13 +52,16 @@ void processa_geo(FILE* arq_geo, Lista* formas) {
         } else if (strcmp(cmd, "t") == 0) {
             int id; double x, y; char corb[32], corp[32], ancora; char conteudo[256];
             fscanf(arq_geo, "%d %lf %lf %31s %31s %c ", &id, &x, &y, corb, corp, &ancora);
+            /* O fgets é necessario porque o texto pode conter espacos (ex: "Ola Mundo") */
             fgets(conteudo, sizeof(conteudo), arq_geo);
             int len = strlen(conteudo);
-            if (len > 0 && conteudo[len-1] == '\n') conteudo[len-1] = '\0';
+            if (len > 0 && conteudo[len-1] == '\n') conteudo[len-1] = '\0'; // Limpa a quebra de linha
+            
             Forma* f = forma_cria_texto(id, x, y, corb, corp, ancora, conteudo);
             if (f != NULL) lista_inserir_fim(formas, f);
 
         } else if (strcmp(cmd, "ts") == 0) {
+            /* Lê e ignora propriedades de fonte por enquanto, conforme especificacao atual */
             char familia[32], peso[32], tamanho[32];
             fscanf(arq_geo, "%31s %31s %31s", familia, peso, tamanho);
         }
@@ -61,7 +69,10 @@ void processa_geo(FILE* arq_geo, Lista* formas) {
 }
 
 /*
- * busca_por_id — percorre a lista procurando a forma com o id informado
+ * entra como funcao auxiliar: busca_por_id
+ * Como as formas estao numa Lista Encadeada nao ordenada,
+   a busca eh feita de forma linear (O(n)). Percorre-se a lista testando 
+   o ID de cada elemento ate encontrar o alvo.
  */
 Forma* busca_por_id(Lista* formas, int id) {
     int n = lista_tamanho(formas);
@@ -73,7 +84,10 @@ Forma* busca_por_id(Lista* formas, int id) {
 }
 
 /*
- * processa_qry — le o arquivo .qry e executa os comandos
+ * modulo motor main: processa_qry
+ * Atua como uma maquina de estados. Comandos de selecao ('sel')
+   criam um subconjunto de formas (a lista 'selecionadas'). Comandos mutadores 
+   ('dels', 'mcs') atuam EXCLUSIVAMENTE sobre este subconjunto em memoria.
  */
 void processa_qry(FILE* arq_qry, Lista* formas, Poligono** poligonos, FILE* arq_txt) {
     char cmd[8];
@@ -85,9 +99,13 @@ void processa_qry(FILE* arq_qry, Lista* formas, Poligono** poligonos, FILE* arq_
             int p, i;
             fscanf(arq_qry, "%d %d", &p, &i);
             if (p < 1 || p > MAX_POLIGONOS) continue;
+            
             Forma* f = busca_por_id(formas, i);
             if (f == NULL) continue;
+            
             double ax = forma_get_x(f), ay = forma_get_y(f);
+            
+            /* Regra especifica do trabalho: se for linha, usar a menor extremidade */
             if (forma_get_tipo(f) == FORMA_LINHA) {
                 double x2 = forma_get_x2(f), y2 = forma_get_y2(f);
                 if (x2 < ax || (x2 == ax && y2 < ay)) { ax = x2; ay = y2; }
@@ -110,10 +128,15 @@ void processa_qry(FILE* arq_qry, Lista* formas, Poligono** poligonos, FILE* arq_
         } else if (strcmp(cmd, "sel") == 0) {
             double x, y, w, h;
             fscanf(arq_qry, "%lf %lf %lf %lf", &x, &y, &w, &h);
+            
+            /* Esvazia selecoes anteriores */
             lista_destruir(selecionadas);
             selecionadas = lista_criar();
+            
             int n = lista_tamanho(formas);
             if (arq_txt) fprintf(arq_txt, "[*] sel %.1f %.1f %.1f %.1f\n", x, y, w, h);
+            
+            /* Filtro Espacial: Verifica se a ancora da forma esta dentro do retanglo demilitador */
             for (int i = 0; i < n; i++) {
                 Forma* f = (Forma*) lista_get(formas, i);
                 double fx = forma_get_x(f), fy = forma_get_y(f);
@@ -128,6 +151,7 @@ void processa_qry(FILE* arq_qry, Lista* formas, Poligono** poligonos, FILE* arq_
             for (int i = 0; i < n; i++) {
                 Forma* f = (Forma*) lista_get(selecionadas, i);
                 if (arq_txt) fprintf(arq_txt, "[*] dels: removido id %d\n", forma_get_id(f));
+                /* Remove fisicamente da memoria e da lista principal */
                 lista_remove(formas, f);
                 forma_destroi(f);
             }
@@ -135,24 +159,26 @@ void processa_qry(FILE* arq_qry, Lista* formas, Poligono** poligonos, FILE* arq_
             selecionadas = lista_criar();
 
         } else if (strcmp(cmd, "mcs") == 0) {
-            /* mcs dx dy corb corp — translada e recolore as selecionadas */
+            /* Translacao (dx, dy) e recoloracao das formas selecionadas */
             double dx, dy; char corb[32], corp[32];
             fscanf(arq_qry, "%lf %lf %31s %31s", &dx, &dy, corb, corp);
+            
             int n = lista_tamanho(selecionadas);
             for (int i = 0; i < n; i++) {
                 Forma* f = (Forma*) lista_get(selecionadas, i);
                 
-                /* move o ponto base (x, y ou x1, y1) */
+                /* Move a ancora principal */
                 forma_set_x(f, forma_get_x(f) + dx);
                 forma_set_y(f, forma_get_y(f) + dy);
                 
-                /* SE for uma linha, temos de mover o segundo ponto (x2, y2) também! */
+                /* excecao estrutural -> linhas possuem dois pontos no plano.
+                 * Ambos os pontos devem ser transladados para que a linha 
+                   mova de forma rigida e nao distorca. */
                 if (forma_get_tipo(f) == FORMA_LINHA) {
                     forma_set_x2(f, forma_get_x2(f) + dx);
                     forma_set_y2(f, forma_get_y2(f) + dy);
                 }
                 
-                /* atualiza as cores */
                 forma_set_cor_borda(f, corb);
                 forma_set_cor_preench(f, corp);
             }
@@ -162,7 +188,8 @@ void processa_qry(FILE* arq_qry, Lista* formas, Poligono** poligonos, FILE* arq_
 }
 
 /*
- * main — ponto de entrada do programa
+ * PONTO DE ENTRADA DO PROGRAMA 
+ * Parsing de parametros -> Leitura de dados -> Processamento -> Exportacao
  */
 int main(int argc, char* argv[]) {
     char dir_entrada[MAX_PATH] = "."; 
@@ -170,6 +197,7 @@ int main(int argc, char* argv[]) {
     char nome_geo[MAX_PATH]    = "";
     char nome_qry[MAX_PATH]    = "";
 
+    /* Processamento Seguro de Argumentos CLI */
     for (int i = 1; i < argc; i++) {
         if      (strcmp(argv[i], "-e") == 0 && i+1 < argc) strncpy(dir_entrada, argv[++i], MAX_PATH-1);
         else if (strcmp(argv[i], "-f") == 0 && i+1 < argc) strncpy(nome_geo,    argv[++i], MAX_PATH-1);
@@ -182,35 +210,40 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    /* Construcao de caminhos evitando Buffer Overflow (snprintf) */
     char caminho_geo[MAX_PATH * 2];
     snprintf(caminho_geo, sizeof(caminho_geo), "%s/%s", dir_entrada, nome_geo);
+    
     FILE* arq_geo = fopen(caminho_geo, "r");
     if (arq_geo == NULL) { fprintf(stderr, "erro: nao abriu %s\n", caminho_geo); return 1; }
 
+    /* Inicializacao das Estruturas de Dados */
     Lista* formas = lista_criar();
     Poligono* poligonos[MAX_POLIGONOS];
     for (int i = 0; i < MAX_POLIGONOS; i++) poligonos[i] = pol_cria();
 
+    /* PASSO 1: Lê e cria o cenario base */
     processa_geo(arq_geo, formas);
     fclose(arq_geo);
 
-    /* Gera o primeiro SVG apenas com o GEO base */
+    /* PASSO 2: Gera o primeiro SVG (Snapshot do "Antes") */
     char caminho_svg_inicial[MAX_PATH];
     strncpy(caminho_svg_inicial, nome_geo, MAX_PATH-1);
     char* pt_svg = strrchr(caminho_svg_inicial, '.'); 
-    if (pt_svg) *pt_svg = '\0';
+    if (pt_svg) *pt_svg = '\0'; /* Remove a extensao .geo */
     
     char svg_path[MAX_PATH * 2]; 
     snprintf(svg_path, sizeof(svg_path), "%s/%s.svg", dir_saida, caminho_svg_inicial);
     svg_gera_arquivo(svg_path, formas);
 
-    /* Se houver .qry, executa os comandos e gera os novos arquivos */
+    /* PASSO 3: Aplicacao de cnsultas (seexistir arquivo .qry) */
     if (strlen(nome_qry) > 0) {
         char caminho_qry[MAX_PATH * 2];
         snprintf(caminho_qry, sizeof(caminho_qry), "%s/%s", dir_entrada, nome_qry);
         FILE* arq_qry = fopen(caminho_qry, "r");
         
         if (arq_qry != NULL) {
+            /* extrai os nomes base (sem extensoes) para compor o nome de saida final */
             char base_geo[MAX_PATH], base_qry[MAX_PATH];
             
             strncpy(base_geo, nome_geo, MAX_PATH-1);
@@ -219,7 +252,7 @@ int main(int argc, char* argv[]) {
             strncpy(base_qry, nome_qry, MAX_PATH-1);
             pt = strrchr(base_qry, '.'); if (pt) *pt = '\0';
             
-            /* 1. Gera o arquivo de log .txt */
+            /* gera o arquivo de log .txt contendo os echos dos comandos */
             char caminho_txt[MAX_PATH * 4]; 
             snprintf(caminho_txt, sizeof(caminho_txt), "%s/%s-%s.txt", dir_saida, base_geo, base_qry);
             FILE* arq_txt = fopen(caminho_txt, "w");
@@ -229,15 +262,17 @@ int main(int argc, char* argv[]) {
             if (arq_txt) fclose(arq_txt);
             fclose(arq_qry);
 
-            /* 2. Gera o SEGUNDO SVG, mostrando as mudancas pos-consultas */
+            /* PASSO 4: Gera o SEGUNDO SVG (Snapshot do "Depois") */
             char caminho_svg_final[MAX_PATH * 4];
             snprintf(caminho_svg_final, sizeof(caminho_svg_final), "%s/%s-%s.svg", dir_saida, base_geo, base_qry);
             svg_gera_arquivo(caminho_svg_final, formas);
         }
     }
 
+    /* PASSO 5: Limpeza de Memoria Rigorosa (Evita Memory Leaks) */
     for (int i = 0; i < MAX_POLIGONOS; i++) pol_destroi(poligonos[i]);
 
+    /* Destroi primeiro os elementos armazenados e depois o "recipiente" (a Lista) */
     int n = lista_tamanho(formas);
     for (int i = 0; i < n; i++) forma_destroi((Forma*) lista_get(formas, i));
     lista_destruir(formas);
