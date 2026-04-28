@@ -3,7 +3,6 @@
 
 #include "forma.h"
 
-
 /*
  * Modulo linha — operacoes especificas para FORMA_LINHA.
  * Uma linha e definida por duas extremidades: (x1,y1) e (x2,y2).
@@ -11,9 +10,6 @@
  * O segundo ponto (x2,y2) e guardado nos dados especificos.
  */
 
-
-
- 
 /*
  * linha_cria
  * cria uma forma do tipo linha com extremidades (x1,y1) e (x2,y2)

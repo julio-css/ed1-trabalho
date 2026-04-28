@@ -1,104 +1,53 @@
-#include <stdlib.h>
-#include "lista.h"
+#ifndef LISTA_H
+#define LISTA_H
 
-/* O Nó só precisa guardar o ponteiro genérico e os links */
-typedef struct No {
-    void* dado;
-    struct No* ant;
-    struct No* prox;
-} No;
+/*
+ * Módulo Lista Duplamente Encadeada
+ * Implementacao de uma lista dinamica generica que permite armazenamento
+   de qualquer tipo de dado atraves de ponteiros void*.
+ * Por ser duplamente encadeada, permite percurso em ambas as direcoes
+   e insercoes eficientes em ambas as extremidades.
+ */
 
-struct Lista {
-    No* inicio;
-    No* fim;
-    int tamanho;
-};
+typedef struct Lista Lista;
 
-Lista* lista_criar(void) {
-    Lista* l = (Lista*)malloc(sizeof(Lista));
-    if (!l) return NULL;
-    l->inicio = l->fim = NULL;
-    l->tamanho = 0;
-    return l;
-}
+/* Cria uma nova lista vazia.
+ * pos-condição: Retorna um ponteiro para a Lista, ou NULL se falhar.
+ */
+Lista* lista_criar(void);
 
-void lista_destruir(Lista* l) {
-    if (!l) return;
-    No* atual = l->inicio;
-    while (atual) {
-        No* prox = atual->prox;
-        free(atual);
-        atual = prox;
-    }
-    free(l);
-}
+/* Libera toda a memoria alocada para os nós da lista e para a estrutura da lista.
+ * !!!! Não libera a memria dos dados (void*) apontados pelos nós.
+ */
+void lista_destruir(Lista* l);
 
-int lista_inserir_fim(Lista* l, void* dado) {
-    if (!l) return 0;
-    No* novo = (No*)malloc(sizeof(No));
-    if (!novo) return 0;
-    novo->dado = dado;
-    novo->prox = NULL;
-    novo->ant = l->fim;
-    
-    if (l->fim) l->fim->prox = novo;
-    else l->inicio = novo;
-    
-    l->fim = novo;
-    l->tamanho++;
-    return 1;
-}
+/* Insere um elemento no final da lista.
+ * Operacao O(1) devido ao ponteiro 'fim'.
+ * Retorna 1 em sucesso, 0 em falha.
+ */
+int lista_inserir_fim(Lista* l, void* dado);
 
-int lista_insere_inicio(Lista* l, void* dado) {
-    if (!l) return 0;
-    No* novo = (No*)malloc(sizeof(No));
-    if (!novo) return 0;
-    novo->dado = dado;
-    novo->ant = NULL;
-    novo->prox = l->inicio;
-    
-    if (l->inicio) l->inicio->ant = novo;
-    else l->fim = novo;
-    
-    l->inicio = novo;
-    l->tamanho++;
-    return 1;
-}
+/* Insere um elemento no inicio da lista.
+ * Operacao O(1) devido ao ponteiro 'inicio'.
+ * Retorna 1 em sucesso, 0 em falha.
+ */
+int lista_insere_inicio(Lista* l, void* dado);
 
-void* lista_remove(Lista* l, void* dado) {
-    if (!l) return NULL;
-    No* atual = l->inicio;
-    while (atual) {
-        if (atual->dado == dado) {
-            if (atual->ant) atual->ant->prox = atual->prox;
-            else l->inicio = atual->prox;
-            
-            if (atual->prox) atual->prox->ant = atual->ant;
-            else l->fim = atual->ant;
-            
-            void* ret = atual->dado;
-            free(atual);
-            l->tamanho--;
-            return ret;
-        }
-        atual = atual->prox;
-    }
-    return NULL;
-}
+/* Remove o nó que contem o ponteiro 'dado'.
+ * Realiza uma busca linear (O(n)).
+ * Retorna o ponteiro do dado removido ou NULL se n encontrado.
+ */
+void* lista_remove(Lista* l, void* dado);
 
-void* lista_get(Lista* l, int idx) {
-    if (!l || idx < 0 || idx >= l->tamanho) return NULL;
-    No* atual = l->inicio;
-    for (int i = 0; i < idx; i++) {
-        atual = atual->prox;
-    }
-    return atual->dado;
-}
+/* Retorna o dado na posição 'idx'.
+ * Opercao O(n). indice 0 eh o primeiro elemento.
+ */
+void* lista_get(Lista* l, int idx);
 
-int lista_tamanho(Lista* l) {
-    return l ? l->tamanho : 0;
-}
+/* Retorna a quantidade de elementos na lista. */
+int lista_tamanho(Lista* l);
 
-int lista_vazia(Lista* l) {
-    return l ? (l->tamanho == 0) : 1;
-}
+/* Retorna 1 se a lista estiver vazia, 0 caso contrário. */
+int lista_vazia(Lista* l);
+
+#endif
