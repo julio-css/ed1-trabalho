@@ -23,66 +23,54 @@ typedef enum {
     FORMA_CIRCULO,
     FORMA_RETANGULO,
     FORMA_LINHA,
-    FORMA_TEXTO
+    FORMA_TEXTO,
+    FORMA_POLIGONO 
 } TipoForma;
 
 /* --- CONSTRUTORES --- */
 
-/* Cria um circulo com centro (x,y) e raio r. Retorna NULL se falhar. */
-Forma* forma_cria_circulo(int id, double x, double y, double r,
-                          char* cor_borda, char* cor_preench);
+Forma* forma_cria_circulo(int id, double x, double y, double r, char* cor_borda, char* cor_preench);
+Forma* forma_cria_retangulo(int id, double x, double y, double w, double h, char* cor_borda, char* cor_preench);
+Forma* forma_cria_linha(int id, double x1, double y1, double x2, double y2, char* cor);
+Forma* forma_cria_texto(int id, double x, double y, char* cor_borda, char* cor_preench, char ancora_tipo, char* texto);
 
-/* Cria um retangulo com canto inferior esquerdo (x,y), largura w e altura h. */
-Forma* forma_cria_retangulo(int id, double x, double y, double w, double h,
-                            char* cor_borda, char* cor_preench);
+/* NOVO CONSTRUTOR: Cria um polígono recebendo um array de coordenadas X e Y */
+Forma* forma_cria_poligono(int id, int num_pontos, double* pts_x, double* pts_y, char* cor_borda, char* cor_preench);
 
-/* Cria uma linha reta ligando as extremidades (x1,y1) e (x2,y2). */
-Forma* forma_cria_linha(int id, double x1, double y1, double x2, double y2,
-                        char* cor);
-
-/* Cria um elemento de texto na ancora (x,y). 
- * ancora_tipo: 'i' (início), 'm' (meio) ou 'f' (fim). */
-Forma* forma_cria_texto(int id, double x, double y,
-                        char* cor_borda, char* cor_preench,
-                        char ancora_tipo, char* texto);
-
-/* --- DESTRUIDORRR --- */
-/* Liberta em seguranca a memoria alocada para a estrutura Forma. */
+/* --- DESTRUIDOR --- */
 void forma_destroi(Forma* f);
 
 /* --- GETTERS (Leitura de Dados) --- */
 int forma_get_id(Forma* f);
 TipoForma forma_get_tipo(Forma* f);
 
-/* Coordenadas base (ancora principal) */
 double forma_get_x(Forma* f);
 double forma_get_y(Forma* f);
-
-/* Dados especificos da Linha (Segunda extremidade) */
 double forma_get_x2(Forma* f);
 double forma_get_y2(Forma* f);
-
-/* Dados especificos do circulo */
 double forma_get_raio(Forma* f);
-
-/* Dados especificos do retangulo */
 double forma_get_largura(Forma* f);
 double forma_get_altura(Forma* f);
-
-/* Cores */
 char* forma_get_cor_borda(Forma* f);
 char* forma_get_cor_preench(Forma* f);
-
-/* Dados especificos do Texto */
 char* forma_get_texto(Forma* f);
-char forma_get_ancora(Forma* f); /* Retorna 'i', 'm' ou 'f' */
+char forma_get_ancora(Forma* f);
 
-/*  SETTERS (Alteracao de Dados)  */
+/* GETTERS DO POLÍGONO */
+int forma_get_num_pontos(Forma* f);
+double forma_get_ponto_x(Forma* f, int i);
+double forma_get_ponto_y(Forma* f, int i);
+
+/* --- SETTERS (Alteracao de Dados) --- */
 void forma_set_x(Forma* f, double x);
 void forma_set_y(Forma* f, double y);
-void forma_set_x2(Forma* f, double x2); /* Apenas para FORMA_LINHA */
-void forma_set_y2(Forma* f, double y2); /* Apenas para FORMA_LINHA */
+void forma_set_x2(Forma* f, double x2);
+void forma_set_y2(Forma* f, double y2);
 void forma_set_cor_borda(Forma* f, char* cor);
 void forma_set_cor_preench(Forma* f, char* cor);
+
+/* SETTERS DO POLÍGONO (Útil para o comando mcs mover os vértices) */
+void forma_set_ponto_x(Forma* f, int i, double x);
+void forma_set_ponto_y(Forma* f, int i, double y);
 
 #endif
