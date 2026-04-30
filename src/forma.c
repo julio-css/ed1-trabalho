@@ -72,7 +72,7 @@ Forma* forma_cria_texto(int id, double x, double y, char* cor_borda, char* cor_p
     return f;
 }
 
-/* NOVO CONSTRUTOR: Copia os pontos para arrays internos da Forma */
+/* Copia os pontos para arrays internos da Forma */
 Forma* forma_cria_poligono(int id, int num_pontos, double* pts_x, double* pts_y, char* cor_borda, char* cor_preench) {
     /* Passamos (0,0) como âncora principal, pois a área do polígono é definida pelos seus vértices */
     Forma* f = aloca_forma(id, 0, 0, cor_borda, cor_preench, FORMA_POLIGONO);
@@ -92,7 +92,7 @@ Forma* forma_cria_poligono(int id, int num_pontos, double* pts_x, double* pts_y,
 void forma_destroi(Forma* f) {
     if (f == NULL) return;
     
-    /* NOVO: Se for um polígono, temos de libertar as arrays dinâmicas de pontos! */
+    /* Se for um polígono, temos de libertar as arrays dinâmicas de pontos! */
     if (f->tipo == FORMA_POLIGONO) {
         free(f->dados.pol.pts_x);
         free(f->dados.pol.pts_y);
