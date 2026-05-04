@@ -3,9 +3,6 @@ CC = gcc
 CFLAGS = -std=c99 -fstack-protector-all -ggdb -O0 -Wall
 LDFLAGS = -O0 -lm
 
-# Ajuste dos diretórios:
-# Como o Makefile está em 'src', o SRC é a pasta atual (.), 
-# e TST/UNITY ficam uma pasta para trás (../)
 SRC   = .
 TST   = ../tst
 UNITY = ../unity
@@ -21,11 +18,9 @@ OBJS = forma.o \
        poligono.o \
        svg.o
 
-# Regra principal
 ted: $(OBJS) main.o
 	$(CC) $(LDFLAGS) -o $(PROJ_NAME) $(OBJS) main.o -lm
 
-# Regras de compilação dos objetos
 main.o: main.c
 	$(CC) -c $(CFLAGS) $(INC) $< -o $@
 
@@ -56,7 +51,6 @@ poligono.o: poligono.c poligono.h fila.h
 svg.o: svg.c svg.h
 	$(CC) -c $(CFLAGS) $(INC) $< -o $@
 
-# Regras de compilação dos testes
 $(TST)/t_fila: $(TST)/t_fila.c fila.c $(UNITY)/unity.c
 	$(CC) $(CFLAGS) $(INC) $(UNITY)/unity.c fila.c $(TST)/t_fila.c -o $(TST)/t_fila
 
@@ -69,7 +63,6 @@ $(TST)/t_forma: $(TST)/t_forma.c forma.c $(UNITY)/unity.c
 $(TST)/t_poligono: $(TST)/t_poligono.c poligono.c fila.c $(UNITY)/unity.c
 	$(CC) $(CFLAGS) $(INC) -DUNITY_INCLUDE_DOUBLE $(UNITY)/unity.c fila.c poligono.c $(TST)/t_poligono.c -o $(TST)/t_poligono
 
-# Regras para rodar os testes
 tst_fila: $(TST)/t_fila
 	./$(TST)/t_fila
 
@@ -84,24 +77,19 @@ tst_poligono: $(TST)/t_poligono
 
 tstall: tst_fila tst_lista tst_forma tst_poligono
 
-# Limpeza
 clean:
 	rm -f *.o $(PROJ_NAME)
 	rm -f $(TST)/t_fila $(TST)/t_lista $(TST)/t_forma $(TST)/t_poligono
 
-.PHONY: ted tstall tst_fila tst_lista tst_forma tst_poligono clean vtest vted
-
-# Variavel com as flags completas do Valgrind
 VG = valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -s
 
-# Roda o valgrind em todos os testes
 vtest: tstall
 	$(VG) ./$(TST)/t_fila
 	$(VG) ./$(TST)/t_lista
 	$(VG) ./$(TST)/t_forma
 	$(VG) ./$(TST)/t_poligono
 
-# Roda o valgrind no programa principal 
-# (Note que ajustei os caminhos para ../testes e ../saida pois o comando será disparado de dentro de src/)
 vted: ted
-	$(VG) ./$(PROJ_NAME) -e ../testes -f espiral-2v-cc-azlj.geo -q polig-1-mcs.qry -o ../saida
+	$(VG) ./$(PROJ_NAME) -e . -f teste.geo -o .
+
+.PHONY: ted tstall tst_fila tst_lista tst_forma tst_poligono clean vtest vted
