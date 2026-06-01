@@ -308,22 +308,33 @@ int main(int argc, char* argv[]) {
         snprintf(caminho_qry, sizeof(caminho_qry), "%s/%s", dir_entrada, nome_qry);
         FILE* arq_qry = fopen(caminho_qry, "r");
         if (arq_qry) {
-            /* monta nomes dos arquivos de saida: base_geo-base_qry.txt e .svg */
             char base_qry[MAX_PATH], caminho_txt[MAX_PATH * 4], caminho_svg_fin[MAX_PATH * 4];
             strncpy(base_qry, nome_qry, MAX_PATH-1);
+            
+            /*o motivo para a correcao desse bug que nao rodou os testes do professor, foi pelo motivo de que quando o nome_qry = "t1/polig-1.qry", a base_qry fica "t1/polig-1" — com a barra da subpasta, dai o arquivo de saída vira t1-t1/polig-1.txt que é um caminho inválido do modo que o professor avalia.*/
+            /* remove a extensao .qry */
             pt = strrchr(base_qry, '.'); if (pt) *pt = '\0';
 
-            snprintf(caminho_txt, sizeof(caminho_txt), "%s/%s-%s.txt", dir_saida, base_geo, base_qry);
+            /* pega so o nome do arquivo sem o caminho da subpasta */
+            /* ex: "t1/polig-1" vira "polig-1" */
+            char* nome_base = strrchr(base_qry, '/');
+            if (nome_base != NULL)
+                nome_base++; /* avanca depois da barra */
+            else
+                nome_base = base_qry; /* nao tinha barra, usa direto */
+
+            /* monta: base_geo-nome_base.txt ex: t1-polig-1.txt */
+            snprintf(caminho_txt, sizeof(caminho_txt), "%s/%s-%s.txt",
+                     dir_saida, base_geo, nome_base);
             FILE* arq_txt = fopen(caminho_txt, "w");
-            
-            /* executa os comandos do .qry */
+
             processa_qry(arq_qry, formas, poligonos, arq_txt);
-            
+
             if (arq_txt) fclose(arq_txt);
             fclose(arq_qry);
 
-            /* gera o svg final com o estado apos o .qry */
-            snprintf(caminho_svg_fin, sizeof(caminho_svg_fin), "%s/%s-%s.svg", dir_saida, base_geo, base_qry);
+            snprintf(caminho_svg_fin, sizeof(caminho_svg_fin), "%s/%s-%s.svg",
+                     dir_saida, base_geo, nome_base);
             svg_gera_arquivo(caminho_svg_fin, formas);
         }
     }
